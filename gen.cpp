@@ -9,18 +9,21 @@
 #include "string.h"
 
 #define MAX_PROD_STR_LEN 20
+#define MAX_FOLLOW_SET_LEN 10
+#define MAX_NUM_PRODS_IN_STATE 100
+#define MAX_NUM_PRODS 20
+#define MAX_NUM_STATES 100
 
 //A single production which holds the left origin and right derivations. The
 //object tracks how far the production has been parsed with a mark.
 class Production {
-  private:
+  public:
 
     // ex. 'S -> .ABC'
     char left;  // ex. 'S'
     char *right;// ex. 'ABC'
-
-  public:
     int mark;   // ex. 0
+    char *followSet;
 
     //general constructor
     Production(char left, char *right) {
@@ -28,6 +31,7 @@ class Production {
       this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
       strcpy(this->right, right);
       this->mark = 0;
+      this->followSet = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
     }
 
     //duplicate the production
@@ -44,26 +48,48 @@ class Production {
       markedStr[mark] = '.';
       printf("%c -> %s\n", this->left, markedStr);
     }
+
+    //check for equality in productions
+    bool equals(Production *prod) {
+      return (prod->left == this->left) &&
+             (prod->mark == this->mark) &&
+             (strcmp(prod->right, this->right) == 0) &&
+             (strcmp(prod->followSet, this->followSet) == 0);
+    }
 };
 
 //A parsing state that contains several productions
 class State {
   public:
+    bool completed;
     int id;
     int numProds;
     Production **prods;
 
     //general constructor
     State(int id) {
+      this->completed = false;
       this->id = id;
       this->numProds = 0;
-      this->prods = (Production**)malloc(100*sizeof(Production*));
+      this->prods = (Production**)malloc(MAX_NUM_PRODS_IN_STATE*sizeof(Production*));
     }
 
     //add another production. duplicate to ensure that we do not override anything
     //in other states.
     void addProduction(Production* prod) {
-      prods[numProds++] = prod->duplicate();
+
+      //ensure the production does not already exist in the state
+      int i;
+      for(i = 0; i < numProds; i++) {
+        if(prods[i]->equals(prod) == true) {
+          break;
+        }
+      }
+      
+      //does not exist yet, so add it
+      if(i == numProds) {
+        prods[numProds++] = prod->duplicate();
+      }
     }
 
     //print the state nicely
@@ -82,9 +108,13 @@ class State {
 int main(int argc, char* argv[]) {
 
   //hold all the productions from the file
-  Production *generalProductions[20];
+  Production *generalProductions[MAX_NUM_PRODS];
   int productionCount = 0;
-  
+
+  //keep track of all states
+  State *states[MAX_NUM_STATES];
+  int stateCount = 0;
+
   //read the production file
   FILE *prod_file = fopen("productions", "r");
   char left;
@@ -94,17 +124,37 @@ int main(int argc, char* argv[]) {
   }
 
   //print the read productions
-  for(int i = 0; i < productionCount; i++) {
-    generalProductions[i]->prettyPrint();
-  }
+  //for(int i = 0; i < productionCount; i++) {
+  //  generalProductions[i]->prettyPrint();
+  //}
 
   //create an initial state with the first prod
-  //add state to list
+  states[stateCount] = new State(stateCount);
+  stateCount++;
+  states[0]->addProduction(generalProductions[0]);
 
-  //find first state not completed
-  //if state not null
+  //start with the first state
+  int currentState = 0;
+
+  //if state was found not completed
+  if(currentState != stateCount) {
 
     //recursively add the prods to the state with the follow sets
+    //check each production in the state (and each newly added)
+    for(int i = 0; i < states[currentState]->numProds; i++) {
+      
+      //get the next symbol on the production
+      int idx = states[currentState]->prods[i]->mark;
+      char n = states[currentState]->prods[i]->right[idx];
+
+      //compare each production's next symbol with the start of a
+      //general production
+      for(int j = 0; j < productionCount; j++) {
+        if(generalProductions[j]->left == n) {
+          states[currentState]->addProduction(generalProductions[j]);
+        }
+      }
+    }
 
     //while state has prod
       //read next symbol
@@ -114,6 +164,20 @@ int main(int argc, char* argv[]) {
       //add state to list
 
     //mark current state as completed
+    states[currentState]->completed = true;
+
+    //find next state not completed
+    for(currentState = 0; currentState < stateCount; currentState++) {
+      if(states[currentState]->completed == false) {
+        break;
+      }
+    }
+  }
+
+  //print all the states
+  for(int i = 0; i < stateCount; i++) {
+    states[i]->prettyPrint();
+  }
 
   return 0;
 }
