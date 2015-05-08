@@ -2,7 +2,13 @@
 //LALR1 Table Generator
 //Description:
 //  This program generates an LALR1 parse table from an file describing
-//  the productions. The input file must be named `productions`.
+//  the productions. The input file must be named `productions` and be
+//  formatted like below.
+//
+//  S -> A
+//  A -> B
+//  A -> BAB
+//  B -> E
 
 #include "stdio.h"
 #include "stdlib.h"
@@ -25,6 +31,10 @@ class Production {
     int mark;   // ex. 0
     char *followSet;
 
+    //track whether this production has already been check so we do not have
+    //to bother removing it from the state
+    bool completed;
+
     //general constructor
     Production(char left, char *right) {
       this->left = left;
@@ -32,6 +42,7 @@ class Production {
       strcpy(this->right, right);
       this->mark = 0;
       this->followSet = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
+      this->completed = false;
     }
 
     //duplicate the production
@@ -102,6 +113,19 @@ class State {
       }
       printf("\n");
     }
+
+    //check for equality between states
+    //bool equals(State *state) {
+    //  if(numProds == state->numProds) {
+    //    for(int i = 0; i < numProds; i++) {
+    //      if(!prods[i].equals(state->prods[i])) {
+    //        return false;
+    //      }
+    //    }
+    //    return true;
+    //  }
+    //  return false;
+    //}
 };
 
 //program entrance
@@ -123,52 +147,130 @@ int main(int argc, char* argv[]) {
     generalProductions[productionCount++] = new Production(left, right);
   }
 
-  //print the read productions
-  //for(int i = 0; i < productionCount; i++) {
-  //  generalProductions[i]->prettyPrint();
-  //}
-
   //create an initial state with the first prod
   states[stateCount] = new State(stateCount);
   stateCount++;
   states[0]->addProduction(generalProductions[0]);
 
   //start with the first state
-  int currentState = 0;
+  int currentStateIndex = 0;
 
-  //if state was found not completed
-  if(currentState != stateCount) {
+  //if state was found incomplete
+  while(currentStateIndex < stateCount) {
+
+    //get current state
+    State *curState = states[currentStateIndex];
 
     //recursively add the prods to the state with the follow sets
     //check each production in the state (and each newly added)
-    for(int i = 0; i < states[currentState]->numProds; i++) {
+    for(int i = 0; i < curState->numProds; i++) {
+
+      //get current production
+      Production *curProd = curState->prods[i];
       
+      //get index of the next symbol on the production
+      int idx = curProd->mark;
+
+      //do not check production if marker is at the end
+      if(idx >= strlen(curProd->right)) {
+        continue;
+      }
+
       //get the next symbol on the production
-      int idx = states[currentState]->prods[i]->mark;
-      char n = states[currentState]->prods[i]->right[idx];
+      char n = curProd->right[idx];
 
       //compare each production's next symbol with the start of a
       //general production
       for(int j = 0; j < productionCount; j++) {
         if(generalProductions[j]->left == n) {
-          states[currentState]->addProduction(generalProductions[j]);
+          curState->addProduction(generalProductions[j]);
         }
       }
     }
 
-    //while state has prod
-      //read next symbol
-      //create state with ID
-      //add connection to state in current state with ID and symbol
-      //find all prods with symbol and move to new state (rm and add)
-      //add state to list
+    //branch off and create new states
+    //start with the first production
+    int currentProdIndex = 0;
+
+    //if state was found incomplete
+    while(currentProdIndex < curState->numProds) {
+
+      //get current production
+      Production *curProd = curState->prods[currentProdIndex];
+      curProd->completed = true;
+
+      //get index of the next symbol on the production
+      int idx = curProd->mark;
+
+      //do not check production if marker is at the end
+      if(idx < strlen(curProd->right)) {
+
+        //get the next symbol on the production
+        char n = curProd->right[idx];
+
+        //create state with ID and production
+        State *newState = new State(stateCount);
+        newState->addProduction(curProd);
+
+        //find all prods with same symbol and move to the new state
+        for(int i = currentProdIndex+1; i < curState->numProds; i++) {
+          int markIndex = curState->prods[i]->mark;
+
+          //if the production has the same next symbol
+          if(curState->prods[i]->right[markIndex] == n) {
+            newState->addProduction(curState->prods[i]);
+            curState->prods[i]->completed = true;
+          }
+        }
+
+        //advance all marks up one for prods in state
+        for(int i = 0; i < newState->numProds; i++) {
+          newState->prods[i]->mark++;
+        }
+
+        //ensure that the state does not already exist
+        //only check the productions in the newState
+        bool match = true;
+        for(int i = 0; i < stateCount; i++) {
+          match = true;
+          for(int p = 0; p < newState->numProds; p++) {
+            if(newState->prods[p]->equals(states[i]->prods[p]) == false) {
+              match = false;
+            }
+          }
+          if(match == true) {
+            break;
+          }
+        }
+
+        //add the state to the list because it is not a duplicate
+        if(match == false) {
+          states[stateCount] = newState;
+          stateCount++;
+        }
+
+        //TODO: add connection to state in current state with ID and symbol
+
+      }
+
+      //TODO: reduce
+      else {
+      }
+
+      //find next incomplete production
+      for(currentProdIndex = 0; currentProdIndex < curState->numProds; currentProdIndex++) {
+        if(curState->prods[currentProdIndex]->completed == false) {
+          break;
+        }
+      }
+    }
 
     //mark current state as completed
-    states[currentState]->completed = true;
+    curState->completed = true;
 
-    //find next state not completed
-    for(currentState = 0; currentState < stateCount; currentState++) {
-      if(states[currentState]->completed == false) {
+    //find next incompleted state
+    for(currentStateIndex = 0; currentStateIndex < stateCount; currentStateIndex++) {
+      if(states[currentStateIndex]->completed == false) {
         break;
       }
     }

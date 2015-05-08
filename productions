@@ -1,4 +1,3 @@
-S -> A
-A -> B
-A -> BAB
-B -> E
+P -> S
+S -> EBE
+B -> O
