@@ -8,6 +8,8 @@
 #include "stdlib.h"
 #include "string.h"
 
+#define MAX_PROD_STR_LEN 20
+
 //A single production which holds the left origin and right derivations. The
 //object tracks how far the production has been parsed with a mark.
 class Production {
@@ -23,7 +25,7 @@ class Production {
     //general constructor
     Production(char left, char *right) {
       this->left = left;
-      this->right = (char*)malloc(20*sizeof(char));
+      this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
       strcpy(this->right, right);
       this->mark = 0;
     }
@@ -79,15 +81,22 @@ class State {
 //program entrance
 int main(int argc, char* argv[]) {
 
-  Production *prod1 = new Production('S', "ABC");
-  Production *prod2 = new Production('A', "DEF");
-
-  State *state = new State(1);
-  state->addProduction(prod1);
-  state->addProduction(prod2);
-  state->prettyPrint();
+  //hold all the productions from the file
+  Production *generalProductions[20];
+  int productionCount = 0;
   
   //read the production file
+  FILE *prod_file = fopen("productions", "r");
+  char left;
+  char *right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
+  while(fscanf(prod_file, "%c -> %s\n", &left, right) > 0) {
+    generalProductions[productionCount++] = new Production(left, right);
+  }
+
+  //print the read productions
+  for(int i = 0; i < productionCount; i++) {
+    generalProductions[i]->prettyPrint();
+  }
 
   //create an initial state with the first prod
   //add state to list
