@@ -20,6 +20,70 @@
 #define MAX_NUM_PRODS 20
 #define MAX_NUM_STATES 100
 
+//A follow set for a production
+class FollowSet {
+  private:
+    char *set;
+    int size;
+
+  public:
+
+    //general constructor
+    FollowSet() {
+      set = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
+      size = 0;
+    }
+
+    //sort the set for easy comparison
+    void sort() {
+      for(int i = 0; i < size-1; i++) {
+        int min = i;
+
+        //check for smaller
+        for(int j = i+1; j < size; j++) {
+          if(set[j] < set[min]) {
+            min = j;
+          }
+        }
+        
+        //swap
+        int tmp = set[i];
+        set[i] = set[min];
+        set[min] = tmp;
+      }
+    }
+
+    //add a new follow to the set
+    void addFollow(char c) {
+      set[size] = c;
+      size++;
+      sort();
+    }
+
+    //check for equality between sets
+    bool equals(FollowSet *f) {
+      return strcmp(f->set, set);
+    }
+
+    //print the follow set
+    void prettyPrint() {
+      printf("{%s}", set);
+    }
+
+    //set setter. copies string instead of reusing
+    void setSet(char *set) {
+      strcpy(this->set, set);
+      size = strlen(set);
+    }
+
+    //duplicate the follow set
+    FollowSet* duplicate() {
+      FollowSet *newFollowSet = new FollowSet();
+      newFollowSet->setSet(set);
+      return newFollowSet;
+    }
+};
+
 //A single production which holds the left origin and right derivations. The
 //object tracks how far the production has been parsed with a mark.
 class Production {
@@ -29,7 +93,7 @@ class Production {
     char left;  // ex. 'S'
     char *right;// ex. 'ABC'
     int mark;   // ex. 0
-    char *followSet;
+    FollowSet *followSet;
 
     //track whether this production has already been check so we do not have
     //to bother removing it from the state
@@ -41,14 +105,15 @@ class Production {
       this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
       strcpy(this->right, right);
       this->mark = 0;
-      this->followSet = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
+      this->followSet = new FollowSet();
       this->completed = false;
     }
 
     //duplicate the production
     Production* duplicate() {
-      Production *prod = new Production(this->left, this->right);
-      prod->mark = this->mark;
+      Production *prod = new Production(left, right);
+      prod->mark = mark;
+      prod->followSet = followSet->duplicate();
       return prod;
     }
 
@@ -57,7 +122,9 @@ class Production {
       char *markedStr = strdup(this->right);
       strcpy(&markedStr[mark+1], &markedStr[mark]);
       markedStr[mark] = '.';
-      printf("%c -> %s\n", this->left, markedStr);
+      printf("%c -> %s  ", left, markedStr);
+      followSet->prettyPrint();
+      printf("\n");
     }
 
     //check for equality in productions
@@ -65,7 +132,7 @@ class Production {
       return (prod->left == this->left) &&
              (prod->mark == this->mark) &&
              (strcmp(prod->right, this->right) == 0) &&
-             (strcmp(prod->followSet, this->followSet) == 0);
+             (prod->followSet->equals(this->followSet) == true);
     }
 };
 
@@ -113,19 +180,6 @@ class State {
       }
       printf("\n");
     }
-
-    //check for equality between states
-    //bool equals(State *state) {
-    //  if(numProds == state->numProds) {
-    //    for(int i = 0; i < numProds; i++) {
-    //      if(!prods[i].equals(state->prods[i])) {
-    //        return false;
-    //      }
-    //    }
-    //    return true;
-    //  }
-    //  return false;
-    //}
 };
 
 //program entrance
@@ -151,6 +205,7 @@ int main(int argc, char* argv[]) {
   states[stateCount] = new State(stateCount);
   stateCount++;
   states[0]->addProduction(generalProductions[0]);
+  states[0]->prods[0]->followSet->addFollow('F');
 
   //start with the first state
   int currentStateIndex = 0;
