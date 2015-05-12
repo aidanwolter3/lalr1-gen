@@ -21,16 +21,14 @@
 #define MAX_NUM_STATES 100
 
 //A follow set for a production
-class FollowSet {
-  private:
-    char *set;
+class Set {
+  public:
+    char *items;
     int size;
 
-  public:
-
     //general constructor
-    FollowSet() {
-      set = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
+    Set() {
+      items = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
       size = 0;
     }
 
@@ -41,46 +39,77 @@ class FollowSet {
 
         //check for smaller
         for(int j = i+1; j < size; j++) {
-          if(set[j] < set[min]) {
+          if(items[j] < items[min]) {
             min = j;
           }
         }
         
         //swap
-        int tmp = set[i];
-        set[i] = set[min];
-        set[min] = tmp;
+        int tmp = items[i];
+        items[i] = items[min];
+        items[min] = tmp;
       }
     }
 
-    //add a new follow to the set
-    void addFollow(char c) {
-      set[size] = c;
-      size++;
-      sort();
+    //add a new follow to the set. do not allow duplicates. sort the set afterwards
+    void add(char c) {
+
+      //check for duplicates
+      int i;
+      for(i = 0; i < size; i++) {
+        if(items[i] == c) {
+          break;
+        }
+      }
+
+      //check all items, so no duplicates
+      if(i == size) {
+        items[size] = c;
+        size++;
+        sort();
+      }
+    }
+
+    //add all the items in one set to this one
+    void add(Set *s) {
+      for(int i = 0; i < s->size; i++) {
+        add(s->items[i]);
+      }
+    }
+
+    //remove a specific item
+    int remove(char c) {
+      for(int i = 0; i < size; i++) {
+        if(items[i] == c) {
+          strcpy(&items[i], &items[i+1]);
+          size--;
+          return 1;
+        }
+      }
+      return 0;
     }
 
     //check for equality between sets
-    bool equals(FollowSet *f) {
-      return strcmp(f->set, set);
+    bool equals(Set *f) {
+      return (strcmp(f->items, items) == 0);
     }
 
     //print the follow set
     void prettyPrint() {
-      printf("{%s}", set);
+      printf("{%s}", items);
     }
 
     //set setter. copies string instead of reusing
-    void setSet(char *set) {
-      strcpy(this->set, set);
-      size = strlen(set);
+    void set(char *items) {
+      strcpy(this->items, items);
+      size = strlen(items);
     }
 
     //duplicate the follow set
-    FollowSet* duplicate() {
-      FollowSet *newFollowSet = new FollowSet();
-      newFollowSet->setSet(set);
-      return newFollowSet;
+    Set* duplicate() {
+      Set *newSet = new Set();
+      newSet->set(items);
+      return newSet;
     }
 };
 
@@ -93,7 +122,7 @@ class Production {
     char left;  // ex. 'S'
     char *right;// ex. 'ABC'
     int mark;   // ex. 0
-    FollowSet *followSet;
+    Set *followSet;
 
     //track whether this production has already been check so we do not have
     //to bother removing it from the state
@@ -105,7 +134,7 @@ class Production {
       this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
       strcpy(this->right, right);
       this->mark = 0;
-      this->followSet = new FollowSet();
+      this->followSet = new Set();
       this->completed = false;
     }
 
@@ -182,6 +211,88 @@ class State {
     }
 };
 
+//a class which computes all the first sets recursively for the productions
+class FirstSets {
+  private:
+    Production **prods;
+    int productionCount;
+
+  public:
+    char lefts[MAX_NUM_PRODS];
+    Set *sets[MAX_NUM_PRODS];
+    int size;
+
+    //general constructor
+    FirstSets(Production *prods[], int productionCount) {
+      size = 0;
+      this->prods = prods;
+      this->productionCount = productionCount;
+    }
+
+    //generate all first sets
+    void generate() {
+      for(int i = 0; i < productionCount; i++) {
+        firstForProd(prods[i]->left);
+      }
+    }
+
+    //recursive function that generates a single first set by generating others
+    Set* firstForProd(char c) {
+
+      //check is the first set already exists and return
+      for(int i = 0; i < size; i++) {
+        if(lefts[i] == c) {
+          return sets[i];
+        }
+      }
+
+      //create a new first set
+      Set *firstSet = new Set();
+
+      //check every production
+      for(int i = 0; i < productionCount; i++) {
+
+        //if the production has the left symbol c
+        if(prods[i]->left == c) {
+
+          //if the first symbol is a production (capital letter)
+          char firstRight = prods[i]->right[0];
+          if(firstRight >= 'A' && firstRight <= 'Z') {
+
+            //continue if the next production is the same as the original
+            if(firstRight == c) {
+              continue;
+            }
+
+            //otherwise get the set of the production
+            firstSet->add(firstForProd(firstRight));
+          }
+
+          //if the first symbol is a char add it to the set
+          else {
+            firstSet->add(firstRight);
+          }
+        }
+      }
+
+      //add the set to the list and return
+      lefts[size] = c;
+      sets[size] = firstSet;
+      size++;
+      return firstSet;
+    }
+
+    //print the first sets nicely
+    void prettyPrint() {
+      printf("First sets:\n");
+      for(int i = 0; i < size; i++) {
+        printf("%c ", lefts[i]);
+        sets[i]->prettyPrint();
+        printf("\n");
+      }
+    }
+};
+
 //program entrance
 int main(int argc, char* argv[]) {
 
@@ -201,11 +312,15 @@ int main(int argc, char* argv[]) {
     generalProductions[productionCount++] = new Production(left, right);
   }
 
+  //generate the first sets for use later when determining follow sets
+  FirstSets *firstSets = new FirstSets(generalProductions, productionCount);
+  firstSets->generate();
+
   //create an initial state with the first prod
   states[stateCount] = new State(stateCount);
   stateCount++;
   states[0]->addProduction(generalProductions[0]);
-  states[0]->prods[0]->followSet->addFollow('F');
+  states[0]->prods[0]->followSet->add('F');
 
   //start with the first state
   int currentStateIndex = 0;
@@ -238,7 +353,41 @@ int main(int argc, char* argv[]) {
       //general production
       for(int j = 0; j < productionCount; j++) {
         if(generalProductions[j]->left == n) {
-          curState->addProduction(generalProductions[j]);
+          Production *newProd = generalProductions[j]->duplicate();
+
+          //create the follow set
+          //while(next is not char and not end of prod), get the first set at mark
+          int mark = idx+1;
+          bool finishedFollow = false;
+          while(finishedFollow == false && mark != strlen(curProd->right) && (curProd->right[mark] >= 'A' && curProd->right[mark] <= 'Z')) {
+            
+            //add the first of the production to the new follow set
+            char l = curProd->right[mark];
+            Set *first = firstSets->firstForProd(l);
+            finishedFollow = first->remove('.') == 1;
+            newProd->followSet->add(first);
+
+            //move to next symbol and get the first set
+            mark++;
+          }
+
+          //if next is end of prod
+          if(finishedFollow == false) {
+            if(mark == strlen(curProd->right)) {
+
+              //add follow of current prod to new prod
+              newProd->followSet->add(curProd->followSet);
+            }
+
+            //if next is char
+            else {
+
+              //add char to follow set
+              newProd->followSet->add(curProd->right[mark]);
+            }
+          }
+
+          curState->addProduction(newProd);
         }
       }
     }
@@ -288,9 +437,17 @@ int main(int argc, char* argv[]) {
         bool match = true;
         for(int i = 0; i < stateCount; i++) {
           match = true;
+
+          //if the state to compare has less productions, then don't even check
+          if(newState->numProds > states[i]->numProds) {
+            match = false;
+            continue;
+          }
+
           for(int p = 0; p < newState->numProds; p++) {
             if(newState->prods[p]->equals(states[i]->prods[p]) == false) {
               match = false;
+              break;
             }
           }
           if(match == true) {
