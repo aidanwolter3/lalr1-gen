@@ -297,6 +297,7 @@ class FirstSets {
 //program entrance
 int main(int argc, char* argv[]) {
 
+  //create the lexer for parsing the production file
   Lexer *lexer = new Lexer((char*)"productions");
   lexer->nextToken()->prettyPrint();
   lexer->nextToken()->prettyPrint();
@@ -306,7 +307,7 @@ int main(int argc, char* argv[]) {
   lexer->nextToken()->prettyPrint();
   return 0;
 
-  //hold all the productions from the file
+  //create a place to store all the productions
   Production *generalProductions[MAX_NUM_PRODS];
   int productionCount = 0;
 

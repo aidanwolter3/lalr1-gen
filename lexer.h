@@ -23,6 +23,7 @@ class Lexer {
   private:
     char *filename;
     FILE *file;
+    bool newlineLast;
   public:
     Lexer(char *filename);
     Token* nextToken();

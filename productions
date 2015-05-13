@@ -1,8 +1,8 @@
-S -> EBE
-S ->
-E -> E0
-E -> 1
-B -> +
-B -> -
-B -> /
-B -> *
+Stm -> Exp Op Exp
+Stm ->
+Exp -> Exp 0
+Exp -> 1
+Op -> +
+Op -> -
+Op -> /
+Op -> *
