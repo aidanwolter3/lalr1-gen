@@ -13,6 +13,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "lexer.h"
 
 #define MAX_PROD_STR_LEN 20
 #define MAX_FOLLOW_SET_LEN 10
@@ -296,6 +297,15 @@ class FirstSets {
 //program entrance
 int main(int argc, char* argv[]) {
 
+  Lexer *lexer = new Lexer((char*)"productions");
+  lexer->nextToken()->prettyPrint();
+  lexer->nextToken()->prettyPrint();
+  lexer->nextToken()->prettyPrint();
+  lexer->nextToken()->prettyPrint();
+  lexer->nextToken()->prettyPrint();
+  lexer->nextToken()->prettyPrint();
+  return 0;
+
   //hold all the productions from the file
   Production *generalProductions[MAX_NUM_PRODS];
   int productionCount = 0;
@@ -315,6 +325,7 @@ int main(int argc, char* argv[]) {
   //generate the first sets for use later when determining follow sets
   FirstSets *firstSets = new FirstSets(generalProductions, productionCount);
   firstSets->generate();
+  firstSets->prettyPrint();
 
   //create an initial state with the first prod
   states[stateCount] = new State(stateCount);
