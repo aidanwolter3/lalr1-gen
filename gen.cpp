@@ -124,13 +124,15 @@ class Production {
     char *right;// ex. 'ABC'
     int mark;   // ex. 0
     Set *followSet;
+    int id;
 
     //track whether this production has already been check so we do not have
     //to bother removing it from the state
     bool completed;
 
     //general constructor
-    Production(char left, char *right) {
+    Production(int id, char left, char *right) {
+      this->id = id;
       this->left = left;
       this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
       strcpy(this->right, right);
@@ -138,7 +140,8 @@ class Production {
       this->followSet = new Set();
       this->completed = false;
     }
-    Production(char left) {
+    Production(int id, char left) {
+      this->id = id;
       this->left = left;
       this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
       this->mark = 0;
@@ -148,7 +151,7 @@ class Production {
 
     //duplicate the production
     Production* duplicate() {
-      Production *prod = new Production(left, right);
+      Production *prod = new Production(id, left, right);
       prod->mark = mark;
       prod->followSet = followSet->duplicate();
       return prod;
@@ -173,6 +176,31 @@ class Production {
     }
 };
 
+//represents a transition from one state to another
+class Transition {
+  public:
+    int destinationId;
+    char mode; //s = shift, r = reduce
+    Set *transitions;
+
+    Transition(int destinationId, char mode, Set *transitions) {
+      this->destinationId = destinationId;
+      this->mode = mode;
+      this->transitions = transitions;
+    }
+
+    bool equals(Transition *trans) {
+      return (destinationId == trans->destinationId) &&
+             (mode == trans->mode) &&
+             (transitions->equals(trans->transitions));
+    }
+
+    void prettyPrint() {
+      transitions->prettyPrint();
+      printf(" -> %c%d", mode, destinationId);
+    }
+};
+
 //A parsing state that contains several productions
 class State {
   public:
@@ -180,6 +208,8 @@ class State {
     int id;
     int numProds;
     Production **prods;
+    Transition *transitions[MAX_NUM_PRODS_IN_STATE];
+    int numTransitions;
 
     //general constructor
     State(int id) {
@@ -187,11 +217,12 @@ class State {
       this->id = id;
       this->numProds = 0;
       this->prods = (Production**)malloc(MAX_NUM_PRODS_IN_STATE*sizeof(Production*));
+      this->numTransitions = 0;
     }
 
     //add another production. duplicate to ensure that we do not override anything
     //in other states.
-    void addProduction(Production* prod) {
+    void addProduction(Production *prod) {
 
       //ensure the production does not already exist in the state
       int i;
@@ -207,13 +238,37 @@ class State {
       }
     }
 
+    void addTransition(Transition *trans) {
+
+      //ensure the transition does not already exist in the state
+      int i;
+      for(i = 0; i < numTransitions; i++) {
+        if(transitions[i]->equals(trans) == true) {
+          break;
+        }
+      }
+
+      //does not exist yet, so add it
+      if(i == numTransitions) {
+        transitions[numTransitions++] = trans;
+      }
+    }
+
     //print the state nicely
     void prettyPrint() {
       printf("\n");
       printf("State: %d\n", this->id);
       printf("-------------------\n");
-      for(int i = 0; i < this->numProds; i++) {
-        this->prods[i]->prettyPrint();
+      for(int i = 0; i < numTransitions; i++) {
+        transitions[i]->prettyPrint();
+        if(i < numTransitions-1) {
+          printf(", ");
+        }
+      }
+      printf("\n");
+      printf("-------------------\n");
+      for(int i = 0; i < numProds; i++) {
+        prods[i]->prettyPrint();
       }
       printf("\n");
     }
@@ -328,7 +383,8 @@ int main(int argc, char* argv[]) {
       if(rightToken->id == 1) {
         Token *newlineToken = lexer->nextToken();
         if(newlineToken->id == 0) {
-          generalProductions[productionCount++] = new Production(leftToken->lexem[0], rightToken->lexem);
+          generalProductions[productionCount] = new Production(productionCount, leftToken->lexem[0], rightToken->lexem);
+          productionCount++;
         }
         else {
           printf("Error in production file!\n");
@@ -336,7 +392,8 @@ int main(int argc, char* argv[]) {
         }
       }
       else if(rightToken->id == 0) {
-        generalProductions[productionCount++] = new Production(leftToken->lexem[0], rightToken->lexem);
+        generalProductions[productionCount] = new Production(productionCount, leftToken->lexem[0], rightToken->lexem);
+          productionCount++;
       }
       else {
         printf("Error in production file!\n");
@@ -502,11 +559,15 @@ int main(int argc, char* argv[]) {
         }
 
         //TODO: add connection to state in current state with ID and symbol
+        Set *transitionSet = new Set();
+        transitionSet->add(n);
+        curState->addTransition(new Transition(newState->id, 's', transitionSet));
 
       }
 
-      //TODO: reduce
+      //add a reduce transition because end of production
       else {
+        curState->addTransition(new Transition(curProd->id, 'r', curProd->followSet));
       }
 
       //find next incomplete production
