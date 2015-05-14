@@ -138,6 +138,13 @@ class Production {
       this->followSet = new Set();
       this->completed = false;
     }
+    Production(char left) {
+      this->left = left;
+      this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
+      this->mark = 0;
+      this->followSet = new Set();
+      this->completed = false;
+    }
 
     //duplicate the production
     Production* duplicate() {
@@ -240,7 +247,7 @@ class FirstSets {
     //recursive function that generates a single first set by generating others
     Set* firstForProd(char c) {
 
-      //check is the first set already exists and return
+      //check if the first set already exists and return
       for(int i = 0; i < size; i++) {
         if(lefts[i] == c) {
           return sets[i];
@@ -255,9 +262,9 @@ class FirstSets {
 
         //if the production has the left symbol c
         if(prods[i]->left == c) {
+          char firstRight = prods[i]->right[0];
 
           //if the first symbol is a production (capital letter)
-          char firstRight = prods[i]->right[0];
           if(firstRight >= 'A' && firstRight <= 'Z') {
 
             //continue if the next production is the same as the original
@@ -271,6 +278,12 @@ class FirstSets {
 
           //if the first symbol is a char add it to the set
           else {
+
+            //if epsilon, then modify the char
+            if(strlen(prods[i]->right) == 0) {
+              firstRight = 'E';
+            }
+
             firstSet->add(firstRight);
           }
         }
@@ -297,16 +310,6 @@ class FirstSets {
 //program entrance
 int main(int argc, char* argv[]) {
 
-  //create the lexer for parsing the production file
-  Lexer *lexer = new Lexer((char*)"productions");
-  lexer->nextToken()->prettyPrint();
-  lexer->nextToken()->prettyPrint();
-  lexer->nextToken()->prettyPrint();
-  lexer->nextToken()->prettyPrint();
-  lexer->nextToken()->prettyPrint();
-  lexer->nextToken()->prettyPrint();
-  return 0;
-
   //create a place to store all the productions
   Production *generalProductions[MAX_NUM_PRODS];
   int productionCount = 0;
@@ -316,17 +319,41 @@ int main(int argc, char* argv[]) {
   int stateCount = 0;
 
   //read the production file
-  FILE *prod_file = fopen("productions", "r");
-  char left;
-  char *right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
-  while(fscanf(prod_file, "%c -> %s\n", &left, right) > 0) {
-    generalProductions[productionCount++] = new Production(left, right);
+  Lexer *lexer = new Lexer((char*)"productions");
+  Token *leftToken = lexer->nextToken();
+  while(leftToken->id == 1) {
+    Token *assignToken = lexer->nextToken();
+    if(assignToken->id == 2) {
+      Token *rightToken = lexer->nextToken();
+      if(rightToken->id == 1) {
+        Token *newlineToken = lexer->nextToken();
+        if(newlineToken->id == 0) {
+          generalProductions[productionCount++] = new Production(leftToken->lexem[0], rightToken->lexem);
+        }
+        else {
+          printf("Error in production file!\n");
+          return 0;
+        }
+      }
+      else if(rightToken->id == 0) {
+        generalProductions[productionCount++] = new Production(leftToken->lexem[0], rightToken->lexem);
+      }
+      else {
+        printf("Error in production file!\n");
+        return 0;
+      }
+    }
+    else {
+      printf("Error in production file!\n");
+      return 0;
+    }
+    //Production *newProd = new Production(leftToken->left);
+    leftToken = lexer->nextToken();
   }
 
   //generate the first sets for use later when determining follow sets
   FirstSets *firstSets = new FirstSets(generalProductions, productionCount);
   firstSets->generate();
-  firstSets->prettyPrint();
 
   //create an initial state with the first prod
   states[stateCount] = new State(stateCount);
@@ -364,6 +391,7 @@ int main(int argc, char* argv[]) {
       //compare each production's next symbol with the start of a
       //general production
       for(int j = 0; j < productionCount; j++) {
+
         if(generalProductions[j]->left == n) {
           Production *newProd = generalProductions[j]->duplicate();
 
@@ -375,8 +403,8 @@ int main(int argc, char* argv[]) {
             
             //add the first of the production to the new follow set
             char l = curProd->right[mark];
-            Set *first = firstSets->firstForProd(l);
-            finishedFollow = first->remove('.') == 1;
+            Set *first = firstSets->firstForProd(l)->duplicate();
+            finishedFollow = first->remove('E') == 0;
             newProd->followSet->add(first);
 
             //move to next symbol and get the first set

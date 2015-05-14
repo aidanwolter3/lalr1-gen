@@ -10,6 +10,7 @@ Lexer::Lexer(char *filename) {
 Token* Lexer::nextToken() {
 
   Token *newToken = new Token();
+  newToken->id = -1;
 
   //if newline hit last, return newline token
   if(newlineLast == true) {
@@ -20,25 +21,22 @@ Token* Lexer::nextToken() {
 
   //get the lexem of the token
   char nextChar = fgetc(this->file);
+
+  if(nextChar == EOF) {
+    return newToken;
+  }
+  
   while(nextChar != ' ' && nextChar != '\n' && nextChar != '\t') {
     newToken->addChar(nextChar);
     nextChar = fgetc(this->file);
   }
 
-  //determine the id of the token
-  //production
-  if(newToken->lexem[0] >= 'A' && newToken->lexem[0] <= 'Z') {
-    newToken->id = 1;
-  }
-
   //assign
-  else if(strcmp(newToken->lexem, "->") == 0) {
+  if(strcmp(newToken->lexem, "->") == 0) {
     newToken->id = 2;
   }
-
-  //literal
   else {
-    newToken->id = 3;
+    newToken->id = 1;
   }
   
   //check if token was newline so that next time we return a newline token
