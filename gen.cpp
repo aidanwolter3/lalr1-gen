@@ -15,352 +15,13 @@
 #include "string.h"
 #include "lexer.h"
 
-#define MAX_PROD_STR_LEN 20
-#define MAX_FOLLOW_SET_LEN 10
-#define MAX_NUM_PRODS_IN_STATE 100
-#define MAX_NUM_PRODS 20
+#include "src/Set.h"
+#include "src/Production.h"
+#include "src/Transition.h"
+#include "src/State.h"
+#include "src/FirstSets.h"
+
 #define MAX_NUM_STATES 100
-
-//A follow set for a production
-class Set {
-  public:
-    char *items;
-    int size;
-
-    //general constructor
-    Set() {
-      items = (char*)malloc(MAX_FOLLOW_SET_LEN*sizeof(char));
-      size = 0;
-    }
-
-    //sort the set for easy comparison
-    void sort() {
-      for(int i = 0; i < size-1; i++) {
-        int min = i;
-
-        //check for smaller
-        for(int j = i+1; j < size; j++) {
-          if(items[j] < items[min]) {
-            min = j;
-          }
-        }
-        
-        //swap
-        int tmp = items[i];
-        items[i] = items[min];
-        items[min] = tmp;
-      }
-    }
-
-    //add a new follow to the set. do not allow duplicates. sort the set afterwards
-    void add(char c) {
-
-      //check for duplicates
-      int i;
-      for(i = 0; i < size; i++) {
-        if(items[i] == c) {
-          break;
-        }
-      }
-
-      //check all items, so no duplicates
-      if(i == size) {
-        items[size] = c;
-        size++;
-        sort();
-      }
-    }
-
-    //add all the items in one set to this one
-    void add(Set *s) {
-      for(int i = 0; i < s->size; i++) {
-        add(s->items[i]);
-      }
-    }
-
-    //remove a specific item
-    int remove(char c) {
-      for(int i = 0; i < size; i++) {
-        if(items[i] == c) {
-          strcpy(&items[i], &items[i+1]);
-          size--;
-          return 1;
-        }
-      }
-      return 0;
-    }
-
-    //check for equality between sets
-    bool equals(Set *f) {
-      return (strcmp(f->items, items) == 0);
-    }
-
-    //print the follow set
-    void prettyPrint() {
-      printf("{%s}", items);
-    }
-
-    //set setter. copies string instead of reusing
-    void set(char *items) {
-      strcpy(this->items, items);
-      size = strlen(items);
-    }
-
-    //duplicate the follow set
-    Set* duplicate() {
-      Set *newSet = new Set();
-      newSet->set(items);
-      return newSet;
-    }
-};
-
-//A single production which holds the left origin and right derivations. The
-//object tracks how far the production has been parsed with a mark.
-class Production {
-  public:
-
-    // ex. 'S -> .ABC'
-    char left;  // ex. 'S'
-    char *right;// ex. 'ABC'
-    int mark;   // ex. 0
-    Set *followSet;
-    int id;
-
-    //track whether this production has already been check so we do not have
-    //to bother removing it from the state
-    bool completed;
-
-    //general constructor
-    Production(int id, char left, char *right) {
-      this->id = id;
-      this->left = left;
-      this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
-      strcpy(this->right, right);
-      this->mark = 0;
-      this->followSet = new Set();
-      this->completed = false;
-    }
-    Production(int id, char left) {
-      this->id = id;
-      this->left = left;
-      this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
-      this->mark = 0;
-      this->followSet = new Set();
-      this->completed = false;
-    }
-
-    //duplicate the production
-    Production* duplicate() {
-      Production *prod = new Production(id, left, right);
-      prod->mark = mark;
-      prod->followSet = followSet->duplicate();
-      return prod;
-    }
-
-    //print the production
-    void prettyPrint() {
-      char *markedStr = strdup(this->right);
-      strcpy(&markedStr[mark+1], &markedStr[mark]);
-      markedStr[mark] = '.';
-      printf("%c -> %s  ", left, markedStr);
-      followSet->prettyPrint();
-      printf("\n");
-    }
-
-    //check for equality in productions
-    bool equals(Production *prod) {
-      return (prod->left == this->left) &&
-             (prod->mark == this->mark) &&
-             (strcmp(prod->right, this->right) == 0) &&
-             (prod->followSet->equals(this->followSet) == true);
-    }
-};
-
-//represents a transition from one state to another
-class Transition {
-  public:
-    int destinationId;
-    char mode; //s = shift, r = reduce
-    Set *transitions;
-
-    Transition(int destinationId, char mode, Set *transitions) {
-      this->destinationId = destinationId;
-      this->mode = mode;
-      this->transitions = transitions;
-    }
-
-    bool equals(Transition *trans) {
-      return (destinationId == trans->destinationId) &&
-             (mode == trans->mode) &&
-             (transitions->equals(trans->transitions));
-    }
-
-    void prettyPrint() {
-      transitions->prettyPrint();
-      printf(" -> %c%d", mode, destinationId);
-    }
-};
-
-//A parsing state that contains several productions
-class State {
-  public:
-    bool completed;
-    int id;
-    int numProds;
-    Production **prods;
-    Transition *transitions[MAX_NUM_PRODS_IN_STATE];
-    int numTransitions;
-
-    //general constructor
-    State(int id) {
-      this->completed = false;
-      this->id = id;
-      this->numProds = 0;
-      this->prods = (Production**)malloc(MAX_NUM_PRODS_IN_STATE*sizeof(Production*));
-      this->numTransitions = 0;
-    }
-
-    //add another production. duplicate to ensure that we do not override anything
-    //in other states.
-    void addProduction(Production *prod) {
-
-      //ensure the production does not already exist in the state
-      int i;
-      for(i = 0; i < numProds; i++) {
-        if(prods[i]->equals(prod) == true) {
-          break;
-        }
-      }
-      
-      //does not exist yet, so add it
-      if(i == numProds) {
-        prods[numProds++] = prod->duplicate();
-      }
-    }
-
-    void addTransition(Transition *trans) {
-
-      //ensure the transition does not already exist in the state
-      int i;
-      for(i = 0; i < numTransitions; i++) {
-        if(transitions[i]->equals(trans) == true) {
-          break;
-        }
-      }
-
-      //does not exist yet, so add it
-      if(i == numTransitions) {
-        transitions[numTransitions++] = trans;
-      }
-    }
-
-    //print the state nicely
-    void prettyPrint() {
-      printf("\n");
-      printf("State: %d\n", this->id);
-      printf("-------------------\n");
-      for(int i = 0; i < numTransitions; i++) {
-        transitions[i]->prettyPrint();
-        if(i < numTransitions-1) {
-          printf(", ");
-        }
-      }
-      printf("\n");
-      printf("-------------------\n");
-      for(int i = 0; i < numProds; i++) {
-        prods[i]->prettyPrint();
-      }
-      printf("\n");
-    }
-};
-
-//a class which computes all the first sets recursively for the productions
-class FirstSets {
-  private:
-    Production **prods;
-    int productionCount;
-
-  public:
-    char lefts[MAX_NUM_PRODS];
-    Set *sets[MAX_NUM_PRODS];
-    int size;
-
-    //general constructor
-    FirstSets(Production *prods[], int productionCount) {
-      size = 0;
-      this->prods = prods;
-      this->productionCount = productionCount;
-    }
-
-    //generate all first sets
-    void generate() {
-      for(int i = 0; i < productionCount; i++) {
-        firstForProd(prods[i]->left);
-      }
-    }
-
-    //recursive function that generates a single first set by generating others
-    Set* firstForProd(char c) {
-
-      //check if the first set already exists and return
-      for(int i = 0; i < size; i++) {
-        if(lefts[i] == c) {
-          return sets[i];
-        }
-      }
-
-      //create a new first set
-      Set *firstSet = new Set();
-
-      //check every production
-      for(int i = 0; i < productionCount; i++) {
-
-        //if the production has the left symbol c
-        if(prods[i]->left == c) {
-          char firstRight = prods[i]->right[0];
-
-          //if the first symbol is a production (capital letter)
-          if(firstRight >= 'A' && firstRight <= 'Z') {
-
-            //continue if the next production is the same as the original
-            if(firstRight == c) {
-              continue;
-            }
-
-            //otherwise get the set of the production
-            firstSet->add(firstForProd(firstRight));
-          }
-
-          //if the first symbol is a char add it to the set
-          else {
-
-            //if epsilon, then modify the char
-            if(strlen(prods[i]->right) == 0) {
-              firstRight = 'E';
-            }
-
-            firstSet->add(firstRight);
-          }
-        }
-      }
-
-      //add the set to the list and return
-      lefts[size] = c;
-      sets[size] = firstSet;
-      size++;
-      return firstSet;
-    }
-
-    //print the first sets nicely
-    void prettyPrint() {
-      printf("First sets:\n");
-      for(int i = 0; i < size; i++) {
-        printf("%c ", lefts[i]);
-        sets[i]->prettyPrint();
-        printf("\n");
-      }
-    }
-};
 
 //program entrance
 int main(int argc, char* argv[]) {
@@ -372,6 +33,9 @@ int main(int argc, char* argv[]) {
   //keep track of all states
   State *states[MAX_NUM_STATES];
   int stateCount = 0;
+
+  //keep track of all possible transitions
+  Set *allTransitions = new Set();
 
   //read the production file
   Lexer *lexer = new Lexer((char*)"productions");
@@ -509,6 +173,9 @@ int main(int argc, char* argv[]) {
         //get the next symbol on the production
         char n = curProd->right[idx];
 
+        //add the symbol as a possible transition
+        allTransitions->add(n);
+
         //create state with ID and production
         State *newState = new State(stateCount);
         newState->addProduction(curProd);
@@ -589,9 +256,46 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  //print all the states
+  allTransitions->add('F');
+
+  //print all the states to the console
   for(int i = 0; i < stateCount; i++) {
     states[i]->prettyPrint();
+  }
+
+  //write the parse table csv
+  FILE *csvFile = fopen("parse_table.csv", "w");
+
+  //write the transition strings
+  for(int i = 0; i < allTransitions->size; i++) {
+    fprintf(csvFile, "%c", allTransitions->items[i]);
+    if(i < allTransitions->size-1) {
+      fprintf(csvFile, ",");
+    }
+  }
+  fprintf(csvFile, "\r");
+
+  //write the lex ids
+  int lexCount = 1;
+  for(int i = 0; i < allTransitions->size; i++) {
+    if(allTransitions->items[i] == 'F') {
+      fprintf(csvFile, "-3");
+    }
+    else {
+      fprintf(csvFile, "%d", lexCount++);
+    }
+    if(i < allTransitions->size-1) {
+      fprintf(csvFile, ",");
+    }
+  }
+  fprintf(csvFile, "\r");
+
+  //write the states
+  for(int i = 0; i < stateCount; i++) {
+    states[i]->writeToCSV(csvFile, allTransitions);
+    if(i < stateCount-1) {
+      fprintf(csvFile, "\r");
+    }
   }
 
   return 0;

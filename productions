@@ -1,7 +1,26 @@
-S -> EOE
-E -> 0
-E -> 1
-O -> +
-O -> -
-O -> /
-O -> *
+print -> print
+lparen -> (
+rparen -> )
+semic -> ;
+assign -> :=
+comma -> ,
+plus -> +
+minus -> -
+mult -> *
+div -> /
+
+S' -> S
+S -> S semic S
+S -> id assign E
+S -> p lparen L rparen
+S ->
+E -> id
+E -> num
+E -> EBE
+E -> lparen S comma E rparen
+L -> E comma L
+L -> E
+B -> plus
+B -> minus
+B -> mult
+B -> div
