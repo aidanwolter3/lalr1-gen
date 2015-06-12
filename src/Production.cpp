@@ -1,22 +1,12 @@
 #include "Production.h"
 
 //general constructor
-Production::Production(int id, char left, char *right) {
+Production::Production(int id, Lexem *left, LexemSet *right) {
   this->id = id;
-  this->left = left;
-  this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
-  strcpy(this->right, right);
+  this->left = left->duplicate();
+  this->right = right->duplicate();
   this->mark = 0;
-  this->followSet = new Set();
-  this->completed = false;
-}
-Production::Production(int id, char left) {
-  this->id = id;
-  this->left = left;
-  this->right = (char*)malloc(MAX_PROD_STR_LEN*sizeof(char));
-  this->mark = 0;
-  this->followSet = new Set();
-  this->completed = false;
+  this->followSet = new LexemSet();
 }
 
 //duplicate the production
@@ -29,18 +19,22 @@ Production* Production::duplicate() {
 
 //print the production
 void Production::prettyPrint() {
-  char *markedStr = strdup(this->right);
-  strcpy(&markedStr[mark+1], &markedStr[mark]);
-  markedStr[mark] = '.';
-  printf("%c -> %s  ", left, markedStr);
-  followSet->prettyPrint();
-  printf("\n");
+  printf("%s ->", left->l);
+  for(int i = 0; i < right->size; i++) {
+    if(mark == i) {
+      printf(" .");
+    }
+    printf(" %s", right->items[i]->l);
+  }
+  if(right->size == 0) {
+    printf(" .");
+  }
 }
 
 //check for equality in productions
 bool Production::equals(Production *prod) {
-  return (prod->left == this->left) &&
+  return (left->compare(this->left) == 0) &&
          (prod->mark == this->mark) &&
-         (strcmp(prod->right, this->right) == 0) &&
+         ((prod->right->equals(this->right)) == true) &&
          (prod->followSet->equals(this->followSet) == true);
 }

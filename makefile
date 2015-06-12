@@ -1,12 +1,9 @@
 CPP_FILES := $(wildcard src/*.cpp)
 OBJ_FILES := $(addprefix src/obj/, $(notdir $(CPP_FILES:.cpp=.o)))
 
-all: gen.cpp lexer.o
+all: gen.cpp
 	(cd src; make)
-	g++ gen.cpp $(OBJ_FILES) lexer.o -o gen
-
-lexer.o: lexer.cpp
-	g++ -c lexer.cpp -o lexer.o
+	g++ gen.cpp $(OBJ_FILES) -o gen
 
 clean:
 	(cd src; make clean)

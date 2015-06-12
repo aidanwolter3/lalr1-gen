@@ -16,8 +16,8 @@ class FirstSets {
     int productionCount;
 
   public:
-    char lefts[MAX_NUM_PRODS];
-    Set *sets[MAX_NUM_PRODS];
+    LexemSet *lefts;
+    LexemSet *sets[MAX_NUM_PRODS];
     int size;
 
     //general constructor
@@ -27,7 +27,7 @@ class FirstSets {
     void generate();
 
     //recursive function that generates a single first set by generating others
-    Set* firstForProd(char c);
+    LexemSet* firstForProd(Lexem *l);
 
     //print the first sets nicely
     void prettyPrint();

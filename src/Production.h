@@ -5,7 +5,8 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "Set.h"
+#include "Lexem.h"
+#include "LexemSet.h"
 
 #define MAX_PROD_STR_LEN 20
 
@@ -14,20 +15,15 @@
 class Production {
   public:
 
-    // ex. 'S -> .ABC'
-    char left;  // ex. 'S'
-    char *right;// ex. 'ABC'
-    int mark;   // ex. 0
-    Set *followSet;
+    // ex. 'S -> . A B C'
     int id;
-
-    //track whether this production has already been check so we do not have
-    //to bother removing it from the state
-    bool completed;
+    Lexem *left;  // ex. 'S'
+    LexemSet *right;// ex. 'A B C'
+    int mark;   // ex. 0
+    LexemSet *followSet;
 
     //general constructor
-    Production(int id, char left, char *right);
-    Production(int id, char left);
+    Production(int id, Lexem *left, LexemSet *right);
 
     //duplicate the production
     Production* duplicate();

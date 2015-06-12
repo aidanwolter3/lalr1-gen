@@ -1,0 +1,39 @@
+%%
+
+id -> 1
+print -> 2
+num -> 3
+lparen -> 4
+rparen -> 5
+semic -> 6
+assign -> 7
+comma -> 8
+plus -> 9
+minus -> 10
+mult -> 11
+div -> 12
+S' -> 13
+S -> 14
+E -> 15
+L -> 16
+B -> 17
+
+%%
+
+S' -> S
+S -> S semic S
+S -> id assign E
+S -> print lparen L rparen
+S ->
+E -> id
+E -> num
+E -> E B E
+E -> lparen S comma E rparen
+L -> E comma L
+L -> E
+B -> plus
+B -> minus
+B -> mult
+B -> div
+
+%%
