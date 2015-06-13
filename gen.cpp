@@ -267,14 +267,8 @@ int main(int argc, char* argv[]) {
   fprintf(csvFile, "\r");
 
   //write the lex ids
-  int lexCount = 1;
   for(int i = 0; i < allTransitions->size; i++) {
-    if(allTransitions->items[i]->compare(eofLexem) == 0) {
-      fprintf(csvFile, "-3");
-    }
-    else {
-      fprintf(csvFile, "%d", lexCount++);
-    }
+    fprintf(csvFile, "%d", allTransitions->items[i]->t);
     if(i < allTransitions->size-1) {
       fprintf(csvFile, ",");
     }
