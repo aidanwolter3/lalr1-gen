@@ -1,7 +1,6 @@
 #ifndef STATE
 #define STATE
 
-#include "Set.h"
 #include "Production.h"
 #include "Transition.h"
 

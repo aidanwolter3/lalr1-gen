@@ -8,13 +8,13 @@
 #define MAX_FOLLOW_SET_LEN 10
 
 //A follow set for a production
-class Set {
+class CharSet {
   public:
     char *items;
     int size;
 
     //general constructor
-    Set();
+    CharSet();
 
     //sort the set for easy comparison
     void sort();
@@ -23,7 +23,7 @@ class Set {
     void add(char c);
 
     //add all the items in one set to this one
-    void add(Set *s);
+    void add(CharSet *s);
 
     //remove a specific item
     int remove(char c);
@@ -32,7 +32,7 @@ class Set {
     bool has(char c);
 
     //check for equality between sets
-    bool equals(Set *f);
+    bool equals(CharSet *f);
 
     //print the follow set
     void prettyPrint();
@@ -41,7 +41,7 @@ class Set {
     void set(char *items);
 
     //duplicate the follow set
-    Set* duplicate();
+    CharSet* duplicate();
 };
 
 #endif

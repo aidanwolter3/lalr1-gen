@@ -4,7 +4,7 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "Set.h"
+#include "CharSet.h"
 #include "Production.h"
 
 #define MAX_NUM_PRODS 20
