@@ -14,6 +14,7 @@
 //object tracks how far the production has been parsed with a mark.
 class Production {
   public:
+    bool completed;
 
     // ex. 'S -> . A B C'
     int id;

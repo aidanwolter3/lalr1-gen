@@ -1,6 +1,7 @@
 #ifndef STATE
 #define STATE
 
+#include "Set.h"
 #include "Production.h"
 #include "Transition.h"
 
@@ -29,7 +30,7 @@ class State {
     void prettyPrint();
 
     //write the states line in a csv for the compiler to read
-    void writeToCSV(FILE *file, Set *transitions);
+    void writeToCSV(FILE *file, LexemSet *transitions);
 };
 
 #endif

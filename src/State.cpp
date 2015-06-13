@@ -58,16 +58,16 @@ void State::prettyPrint() {
   printf("-------------------\n");
   for(int i = 0; i < numProds; i++) {
     prods[i]->prettyPrint();
+    printf("\n");
   }
-  printf("\n");
 }
 
 //write the states line in a csv for the compiler to read
-void State::writeToCSV(FILE *file, Set *transitions) {
+void State::writeToCSV(FILE *file, LexemSet *transitions) {
   for(int i = 0; i < transitions->size; i++) {
     for(int j = 0; j < numTransitions; j++) {
-      if(this->transitions[j]->transitions->has(transitions->items[i])) {
-        if(transitions->items[i] >= 'A' && transitions->items[i] <= 'Z') {
+      if(this->transitions[j]->triggers->has(transitions->items[i])) {
+        if(transitions->items[i]->l[0] >= 'A' && transitions->items[i]->l[0] <= 'Z') {
           fprintf(file, "%d", this->transitions[j]->destinationId);
         }
         else {

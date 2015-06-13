@@ -2,6 +2,7 @@
 
 //general constructor
 Production::Production(int id, Lexem *left, LexemSet *right) {
+  this->completed = false;
   this->id = id;
   this->left = left->duplicate();
   this->right = right->duplicate();
@@ -26,7 +27,7 @@ void Production::prettyPrint() {
     }
     printf(" %s", right->items[i]->l);
   }
-  if(right->size == 0) {
+  if(right->size == 0 || right->size == mark) {
     printf(" .");
   }
 }

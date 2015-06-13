@@ -1,18 +1,18 @@
 #include "Transition.h"
 
-Transition::Transition(int destinationId, char mode, Set *transitions) {
+Transition::Transition(int destinationId, char mode, LexemSet *triggers) {
   this->destinationId = destinationId;
   this->mode = mode;
-  this->transitions = transitions;
+  this->triggers = triggers;
 }
 
 bool Transition::equals(Transition *trans) {
   return (destinationId == trans->destinationId) &&
          (mode == trans->mode) &&
-         (transitions->equals(trans->transitions));
+         (triggers->equals(trans->triggers));
 }
 
 void Transition::prettyPrint() {
-  transitions->prettyPrint();
+  triggers->prettyPrint();
   printf(" -> %c%d", mode, destinationId);
 }
