@@ -1,2 +1,5 @@
+*.csv
+gen
+*.dSYM
 *.o
 *.swp

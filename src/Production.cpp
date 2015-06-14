@@ -30,12 +30,14 @@ void Production::prettyPrint() {
   if(right->size == 0 || right->size == mark) {
     printf(" .");
   }
+  printf("  ");
+  followSet->prettyPrint();
 }
 
 //check for equality in productions
 bool Production::equals(Production *prod) {
   return (left->compare(this->left) == 0) &&
          (prod->mark == this->mark) &&
-         ((prod->right->equals(this->right)) == true) &&
+         ((prod->right->exactEquals(this->right)) == true) &&
          (prod->followSet->equals(this->followSet) == true);
 }

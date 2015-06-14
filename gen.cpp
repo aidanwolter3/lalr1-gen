@@ -40,10 +40,6 @@ int main(int argc, char* argv[]) {
 
   LanguageDefinitionParser *parser = new LanguageDefinitionParser();
 
-  //create a place for all the lexems
-  Lexem *lexems[MAX_NUM_LEXEMS];
-  int lexemCount = 0;
-
   //create a place to store all the productions
   Production *generalProductions[MAX_NUM_PRODS];
   int productionCount = 0;
@@ -65,7 +61,7 @@ int main(int argc, char* argv[]) {
   states[stateCount] = new State(stateCount);
   stateCount++;
   states[0]->addProduction(generalProductions[0]);
-  Lexem *eofLexem = new Lexem(-1, (char*)"eof");
+  Lexem *eofLexem = new Lexem(-3, (char*)"eof");
   states[0]->prods[0]->followSet->add(eofLexem);
 
   //start with the first state
@@ -80,7 +76,7 @@ int main(int argc, char* argv[]) {
     //recursively add the prods to the state with the follow sets
     //check each production in the state (and each newly added)
     for(int i = 0; i < curState->numProds; i++) {
-
+      
       //get current production
       Production *curProd = curState->prods[i];
       
@@ -98,8 +94,9 @@ int main(int argc, char* argv[]) {
       //compare each production's next symbol with the start of a
       //general production
       for(int j = 0; j < productionCount; j++) {
-
+        
         if(generalProductions[j]->left->compare(n) == 0) {
+
           Production *newProd = generalProductions[j]->duplicate();
 
           //create the follow set
@@ -146,7 +143,7 @@ int main(int argc, char* argv[]) {
 
     //if state was found incomplete
     while(currentProdIndex < curState->numProds) {
-
+ 
       //get current production
       Production *curProd = curState->prods[currentProdIndex];
       curProd->completed = true;
@@ -167,6 +164,8 @@ int main(int argc, char* argv[]) {
 
         //create state with ID and production
         State *newState = new State(stateCount);
+        if(stateCount == 8) {
+        }
         newState->addProduction(curProd);
 
         //find all prods with same symbol and move to the new state
@@ -174,7 +173,8 @@ int main(int argc, char* argv[]) {
           int markIndex = curState->prods[i]->mark;
 
           //if the production has the same next symbol
-          if(curState->prods[i]->right->items[markIndex]->compare(n) == 0) {
+          if(curState->prods[i]->right->size > markIndex &&
+             curState->prods[i]->right->items[markIndex]->compare(n) == 0) {
             newState->addProduction(curState->prods[i]);
             curState->prods[i]->completed = true;
           }
@@ -188,6 +188,7 @@ int main(int argc, char* argv[]) {
         //ensure that the state does not already exist
         //only check the productions in the newState
         bool match = true;
+        int matchedId = 0;
         for(int i = 0; i < stateCount; i++) {
           match = true;
 
@@ -204,6 +205,7 @@ int main(int argc, char* argv[]) {
             }
           }
           if(match == true) {
+            matchedId = i;
             break;
           }
         }
@@ -213,12 +215,16 @@ int main(int argc, char* argv[]) {
           states[stateCount] = newState;
           stateCount++;
         }
-
-        //TODO: add connection to state in current state with ID and symbol
+        
+        //add the transition to the new (or existing) state in the current state
         LexemSet *transitionSet = new LexemSet();
         transitionSet->add(n);
-        curState->addTransition(new Transition(newState->id, 's', transitionSet));
-
+        if(match == true) {
+          curState->addTransition(new Transition(matchedId, 's', transitionSet));
+        }
+        else {
+          curState->addTransition(new Transition(newState->id, 's', transitionSet));
+        }
       }
 
       //add a reduce transition because end of production

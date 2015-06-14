@@ -20,7 +20,7 @@ void State::addProduction(Production *prod) {
       break;
     }
   }
-  
+
   //does not exist yet, so add it
   if(i == numProds) {
     prods[numProds++] = prod->duplicate();
@@ -64,14 +64,27 @@ void State::prettyPrint() {
 
 //write the states line in a csv for the compiler to read
 void State::writeToCSV(FILE *file, LexemSet *transitions) {
+
+  //for every possible transition trigger
   for(int i = 0; i < transitions->size; i++) {
+
+    //check if this state has the trigger
     for(int j = 0; j < numTransitions; j++) {
-      if(this->transitions[j]->triggers->has(transitions->items[i])) {
+      if(this->transitions[j]->triggers->has(transitions->items[i]) >= 0) {
+
+        //if the trigger is on a prod
         if(transitions->items[i]->l[0] >= 'A' && transitions->items[i]->l[0] <= 'Z') {
           fprintf(file, "%d", this->transitions[j]->destinationId);
         }
+
+        //else the trigger is on a token
         else {
-          fprintf(file, "%c%d", this->transitions[j]->mode, this->transitions[j]->destinationId);
+          if(this->transitions[j]->mode == 'r' && this->transitions[j]->destinationId == 0) {
+            fprintf(file, "a");
+          }
+          else {
+            fprintf(file, "%c%d", this->transitions[j]->mode, this->transitions[j]->destinationId);
+          }
         }
         break;
       }

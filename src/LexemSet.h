@@ -38,6 +38,7 @@ class LexemSet {
 
     //check for equality between sets
     bool equals(LexemSet *f);
+    bool exactEquals(LexemSet *f);
 
     //print the follow set
     void prettyPrint();

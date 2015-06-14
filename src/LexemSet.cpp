@@ -73,9 +73,27 @@ int LexemSet::has(Lexem *l) {
 
 //check for equality between sets
 bool LexemSet::equals(LexemSet *f) {
+  if(size != f->size) {
+    return false;
+  }
   bool same = true;
   for(int i = 0; i < size; i++) {
     if(items[sortedOrder[i]]->compare(f->items[f->sortedOrder[i]]) != 0) {
+      same = false;
+      break;
+    }
+  }
+  return same;
+}
+
+//check for equality between sets when taking order added into account
+bool LexemSet::exactEquals(LexemSet *f) {
+  if(size != f->size) {
+    return false;
+  }
+  bool same = true;
+  for(int i = 0; i < size; i++) {
+    if(items[i]->compare(f->items[i]) != 0) {
       same = false;
       break;
     }
