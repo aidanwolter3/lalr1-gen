@@ -1,5 +1,5 @@
 *.csv
-gen
+lalr1-gen
 *.dSYM
 *.o
 *.swp

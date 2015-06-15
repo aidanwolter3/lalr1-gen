@@ -4,9 +4,9 @@ OBJ_FILES := $(addprefix src/obj/, $(notdir $(CPP_FILES:.cpp=.o)))
 CC=g++
 CFLAGS=-g -Wall
 
-all: gen.cpp
+all: lalr1-gen.cpp
 	(cd src; make)
-	$(CC) $(CFLAGS) gen.cpp $(OBJ_FILES) -o gen
+	$(CC) $(CFLAGS) lalr1-gen.cpp $(OBJ_FILES) -o lalr1-gen
 
 clean:
 	(cd src; make clean)
