@@ -256,9 +256,9 @@ int main(int argc, char* argv[]) {
   }
 
   //print all the states to the console
-  for(int i = 0; i < stateCount; i++) {
-    states[i]->prettyPrint();
-  }
+  //for(int i = 0; i < stateCount; i++) {
+  //  states[i]->prettyPrint();
+  //}
 
   //write the parse table csv
   FILE *csvFile = fopen("parse_table.csv", "w");
@@ -270,7 +270,7 @@ int main(int argc, char* argv[]) {
       fprintf(csvFile, ",");
     }
   }
-  fprintf(csvFile, "\r");
+  fprintf(csvFile, "\r\n");
 
   //write the lex ids
   for(int i = 0; i < allTransitions->size; i++) {
@@ -279,13 +279,13 @@ int main(int argc, char* argv[]) {
       fprintf(csvFile, ",");
     }
   }
-  fprintf(csvFile, "\r");
+  fprintf(csvFile, "\r\n");
 
   //write the states
   for(int i = 0; i < stateCount; i++) {
     states[i]->writeToCSV(csvFile, allTransitions);
     if(i < stateCount-1) {
-      fprintf(csvFile, "\r");
+      fprintf(csvFile, "\r\n");
     }
   }
 
