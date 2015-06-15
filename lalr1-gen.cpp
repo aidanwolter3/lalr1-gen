@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
   stateCount++;
   states[0]->addProduction(generalProductions[0]);
   Lexem *eofLexem = new Lexem(-3, (char*)"eof");
-  states[0]->prods[0]->followSet->add(eofLexem);
+  states[0]->prods[0]->addFollow(eofLexem);
 
   //start with the first state
   int currentStateIndex = 0;
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
             LexemSet *first = firstSets->firstForProd(l)->duplicate();
             Lexem *epsilon = new Lexem(0, (char*)"epsilon");
             finishedFollow = first->remove(epsilon) == 0;
-            newProd->followSet->add(first);
+            newProd->addFollow(first);
 
             //move to next symbol and get the first set
             mark++;
@@ -130,14 +130,14 @@ int main(int argc, char* argv[]) {
             if(mark == curProd->right->size) {
 
               //add follow of current prod to new prod
-              newProd->followSet->add(curProd->followSet);
+              newProd->addFollow(curProd->followSet);
             }
 
             //if next is char
             else {
 
               //add char to follow set
-              newProd->followSet->add(curProd->right->items[mark]);
+              newProd->addFollow(curProd->right->items[mark]);
             }
           }
 

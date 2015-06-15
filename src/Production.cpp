@@ -41,3 +41,29 @@ bool Production::equals(Production *prod) {
          ((prod->right->exactEquals(this->right)) == true) &&
          (prod->followSet->equals(this->followSet) == true);
 }
+
+//add a follow to the follow set and ensure that it is unique
+void Production::addFollow(Lexem *l) {
+  bool match = false;
+  for(int i = 0; i < followSet->size; i++) {
+    if(followSet->items[i]->compare(l) == 0) {
+      match = true;
+    }
+  }
+  if(match == false) {
+    followSet->add(l);
+  }
+}
+void Production::addFollow(LexemSet *s) {
+  for(int i = 0; i < s->size; i++) {
+    bool match = false;
+    for(int j = 0; j < followSet->size; j++) {
+      if(followSet->items[j]->compare(s->items[j]) == 0) {
+        match = true;
+      }
+    }
+    if(match == false) {
+      followSet->add(s->items[i]);
+    }
+  }
+}

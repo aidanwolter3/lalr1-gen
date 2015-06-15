@@ -34,6 +34,9 @@ class Production {
 
     //check for equality in productions
     bool equals(Production *prod);
+
+    void addFollow(Lexem *l);
+    void addFollow(LexemSet *s);
 };
 
 #endif
