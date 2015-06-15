@@ -44,7 +44,16 @@ int main(int argc, char* argv[]) {
   Production *generalProductions[MAX_NUM_PRODS];
   int productionCount = 0;
 
-  parser->parse("language_definition", generalProductions, &productionCount);
+  
+  char* definition_filename = (char*)"language_definition";
+  if(argc > 1) {
+    definition_filename = argv[1];
+  }
+  int ret = parser->parse(definition_filename, generalProductions, &productionCount);
+  if(ret != 0) {
+    printf("Could not find the definition file: %s\n", definition_filename);
+    return 0;
+  }
 
   //keep track of all states
   State *states[MAX_NUM_STATES];

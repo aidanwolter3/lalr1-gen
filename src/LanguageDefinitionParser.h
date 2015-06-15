@@ -14,5 +14,5 @@ class LanguageDefinitionParser  {
 
   public:
     LanguageDefinitionParser();
-    void parse(const char* filename, Production *prods[], int *production_count);
+    int parse(const char* filename, Production *prods[], int *production_count);
 };

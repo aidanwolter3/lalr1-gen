@@ -4,8 +4,11 @@ LanguageDefinitionParser::LanguageDefinitionParser() {
   lexems = new LexemSet();
 }
 
-void LanguageDefinitionParser::parse(const char* filename, Production *prods[], int *production_count) {
+int LanguageDefinitionParser::parse(const char* filename, Production *prods[], int *production_count) {
   FILE *definitionFile = fopen(filename, "r");
+  if(definitionFile == NULL) {
+    return -1;
+  }
   *production_count = 0;
 
   int mode = 0; //start looking for %%
@@ -97,4 +100,6 @@ void LanguageDefinitionParser::parse(const char* filename, Production *prods[], 
       }
     }
   }
+
+  return 0;
 }
