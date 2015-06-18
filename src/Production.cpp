@@ -58,7 +58,7 @@ void Production::addFollow(LexemSet *s) {
   for(int i = 0; i < s->size; i++) {
     bool match = false;
     for(int j = 0; j < followSet->size; j++) {
-      if(followSet->items[j]->compare(s->items[j]) == 0) {
+      if(followSet->items[j]->compare(s->items[i]) == 0) {
         match = true;
       }
     }

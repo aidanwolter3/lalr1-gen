@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   int stateCount = 0;
 
   //keep track of all possible transitions
-  LexemSet *allTransitions = new LexemSet();
+  LexemSet *allTriggers = new LexemSet();
 
   //generate the first sets for use later when determining follow sets
   FirstSets *firstSets = new FirstSets(generalProductions, productionCount);
@@ -166,15 +166,13 @@ int main(int argc, char* argv[]) {
         //get the next symbol on the production
         Lexem *n = curProd->right->items[idx];
 
-        //add the symbol as a possible transition
-        if(allTransitions->has(n) == -1) {
-          allTransitions->add(n);
+        //add the symbol as a possible trigger
+        if(allTriggers->has(n) == -1) {
+          allTriggers->add(n);
         }
 
         //create state with ID and production
         State *newState = new State(stateCount);
-        if(stateCount == 8) {
-        }
         newState->addProduction(curProd);
 
         //find all prods with same symbol and move to the new state
@@ -226,19 +224,19 @@ int main(int argc, char* argv[]) {
         }
         
         //add the transition to the new (or existing) state in the current state
-        LexemSet *transitionSet = new LexemSet();
-        transitionSet->add(n);
         if(match == true) {
-          curState->addTransition(new Transition(matchedId, 's', transitionSet));
+          curState->addTransition(new Transition(matchedId, 's', n));
         }
         else {
-          curState->addTransition(new Transition(newState->id, 's', transitionSet));
+          curState->addTransition(new Transition(newState->id, 's', n));
         }
       }
 
       //add a reduce transition because end of production
       else {
-        curState->addTransition(new Transition(curProd->id, 'r', curProd->followSet));
+        for(int i = 0; i < curProd->followSet->size; i++) {
+          curState->addTransition(new Transition(curProd->id, 'r', curProd->followSet->items[i]));
+        }
       }
 
       //find next incomplete production
@@ -260,31 +258,31 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if(allTransitions->has(eofLexem) == -1) {
-    allTransitions->add(eofLexem);
+  if(allTriggers->has(eofLexem) == -1) {
+    allTriggers->add(eofLexem);
   }
 
   //print all the states to the console
-  //for(int i = 0; i < stateCount; i++) {
-  //  states[i]->prettyPrint();
-  //}
+  for(int i = 0; i < stateCount; i++) {
+    //states[i]->prettyPrint();
+  }
 
   //write the parse table csv
   FILE *csvFile = fopen("parse_table.csv", "w");
 
   //write the transition strings
-  for(int i = 0; i < allTransitions->size; i++) {
-    fprintf(csvFile, "%s", allTransitions->items[i]->l);
-    if(i < allTransitions->size-1) {
+  for(int i = 0; i < allTriggers->size; i++) {
+    fprintf(csvFile, "%s", allTriggers->items[i]->l);
+    if(i < allTriggers->size-1) {
       fprintf(csvFile, ",");
     }
   }
   fprintf(csvFile, "\r\n");
 
   //write the lex ids
-  for(int i = 0; i < allTransitions->size; i++) {
-    fprintf(csvFile, "%d", allTransitions->items[i]->t);
-    if(i < allTransitions->size-1) {
+  for(int i = 0; i < allTriggers->size; i++) {
+    fprintf(csvFile, "%d", allTriggers->items[i]->t);
+    if(i < allTriggers->size-1) {
       fprintf(csvFile, ",");
     }
   }
@@ -292,7 +290,7 @@ int main(int argc, char* argv[]) {
 
   //write the states
   for(int i = 0; i < stateCount; i++) {
-    states[i]->writeToCSV(csvFile, allTransitions);
+    states[i]->writeToCSV(csvFile, allTriggers);
     if(i < stateCount-1) {
       fprintf(csvFile, "\r\n");
     }

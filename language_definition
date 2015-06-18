@@ -1,34 +1,30 @@
 %%
 
-id -> 1
-print -> 2
+huck -> 1
+id -> 2
 num -> 3
-lparen -> 4
-rparen -> 5
-semic -> 6
-assign -> 7
-comma -> 8
-plus -> 9
-minus -> 10
-mult -> 11
-div -> 12
-S -> 13
-E -> 14
-L -> 15
-B -> 16
-S' -> 17
+assign -> 4
+plus -> 5
+minus -> 6
+mult -> 7
+div -> 8
+comma -> 9
+S' -> 10
+S -> 11
+E -> 12
+L -> 13
+B -> 14
 
 %%
 
 S' -> S
-S -> S semic S
-S -> id assign E
-S -> print lparen L rparen
+S -> S S
 S ->
-E -> id
+S -> id assign E
+S -> huck E
 E -> num
+E -> id
 E -> E B E
-E -> lparen S comma E rparen
 L -> E comma L
 L -> E
 B -> plus
@@ -37,3 +33,20 @@ B -> mult
 B -> div
 
 %%
+
+ultimate
+huck (print)
+throw (error)
+travel (continue)
+swing
+hammer
+flick
+push
+fake
+curve
+insideout
+look drop (if else)
+find
+backhand
+
+basically on specific params check specific vals or stop at specific point

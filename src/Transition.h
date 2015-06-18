@@ -8,9 +8,9 @@ class Transition {
   public:
     int destinationId;
     char mode; //s = shift, r = reduce
-    LexemSet *triggers;
+    Lexem *trigger;
 
-    Transition(int destinationId, char mode, LexemSet *triggers);
+    Transition(int destinationId, char mode, Lexem *trigger);
 
     bool equals(Transition *trans);
 
